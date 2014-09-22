@@ -1,4 +1,4 @@
-A lot of tools used on FBReader® book network (https://books.fbreader.org/)
+Python library used on FBReader® book network (https://books.fbreader.org/) + some command tools based on the library
 
 Command line tools:
   ./encrypt.py:         Marlin ePub encryptor
