@@ -2,10 +2,9 @@ import os, shutil, urllib, zipfile
 from lxml import etree
 from tempfile import mktemp
 
-from fbreader.format.bookfile import BookFile
 from fbreader.format.aes import encrypt
-
-MIMETYPE_EPUB = 'application/epub+zip'
+from fbreader.format.bookfile import BookFile
+from fbreader.format.mimetype import Mimetype
 
 def list_zip_file_infos(zipfile):
     return [info for info in zipfile.infolist() if not info.filename.endswith('/')]
@@ -45,7 +44,7 @@ class EPub(BookFile):
             Exception.__init__(self, 'ePub verification failed: ' + message)
 
     def __init__(self, path):
-        BookFile.__init__(self, path, path, MIMETYPE_EPUB)
+        BookFile.__init__(self, path, path, Mimetype.EPUB)
         self.root_filename = None
         self.cover_fileinfos = []
 
@@ -70,7 +69,7 @@ class EPub(BookFile):
                 self.issues.append(EPub.Issue.MIMETYPE_ITEM_IS_DEFLATED)
 
             with self.__zip_file.open(EPub.Entry.MIMETYPE) as mimetype_file:
-                if mimetype_file.read(30).rstrip('\n\r') != MIMETYPE_EPUB:
+                if mimetype_file.read(30).rstrip('\n\r') != Mimetype.EPUB:
                     raise EPub.StructureException('\'mimetype\' item content is incorrect')
 
             self.__extract_metainfo()
@@ -367,7 +366,7 @@ class EPub(BookFile):
 
         new_epub = mktemp(dir=working_dir)
         with zipfile.ZipFile(new_epub, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            zip_file.writestr(EPub.Entry.MIMETYPE, MIMETYPE_EPUB, zipfile.ZIP_STORED)
+            zip_file.writestr(EPub.Entry.MIMETYPE, Mimetype.EPUB, zipfile.ZIP_STORED)
             encrypted_files = []
             for entry in [info.filename for info in list_zip_file_infos(self.__zip_file) if info.filename != EPub.Entry.MIMETYPE]:
                 path = os.path.join(working_dir, entry)
@@ -388,7 +387,7 @@ class EPub(BookFile):
 
         new_epub = mktemp(dir=working_dir)
         with zipfile.ZipFile(new_epub, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            zip_file.writestr(EPub.Entry.MIMETYPE, MIMETYPE_EPUB, zipfile.ZIP_STORED)
+            zip_file.writestr(EPub.Entry.MIMETYPE, Mimetype.EPUB, zipfile.ZIP_STORED)
             for entry in [info.filename for info in list_zip_file_infos(self.__zip_file) if info.filename != EPub.Entry.MIMETYPE]:
                 zip_file.write(os.path.join(working_dir, entry), arcname=entry)
         shutil.move(new_epub, self.path)
