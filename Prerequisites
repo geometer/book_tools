@@ -1,0 +1,10 @@
+python libraries required for running these scripts on debian computer:
+
+all scripts:
+  python 2.7
+  lxml          pyhton-lxml [debian]
+  crypto        python-crypto [debian]
+
+create_opds.py:
+  magic         pyhton-magic [debian]
+  pymobi        pymobi [pip]
