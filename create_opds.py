@@ -46,7 +46,7 @@ def utf8(text):
 def timestamp():
     return datetime.now().replace(microsecond=0).isoformat()
 
-def hash(file_name):
+def file_hash(file_name):
     sha = hashlib.sha1()
     with open(file_name, 'rb') as istream:
         data = istream.read(8192)
@@ -55,8 +55,16 @@ def hash(file_name):
             data = istream.read(8192)
     return sha.hexdigest()
 
-def warning(pattern, params):
+def string_hash(string):
+    sha = hashlib.sha1()
+    sha.update(string)
+    return sha.hexdigest()
+
+def warning(pattern, *params):
     print 'Warning: ' + pattern % params
+
+def fatal(pattern, *params):
+    exit('Fatal error: ' + pattern % params)
 
 def add_info(root, info):
     etree.SubElement(root, etree.QName(NS_ATOM, 'updated')).text = timestamp()
@@ -74,11 +82,9 @@ def add_info(root, info):
             warning('feed "%s" attribute is not specified', author_key)
 
 def add_entry(root, urls, working_dir):
-    count = 0
     book_map = {}
-    for u in urls:
+    for count, u in enumerate(urls):
         file_name = working_dir + '/%s' % count
-        count += 1
         try:
             with open(file_name, 'wb') as f:
                 f.write(urllib2.urlopen(u).read())
@@ -98,7 +104,7 @@ def add_entry(root, urls, working_dir):
             break
 
     entry = etree.SubElement(root, etree.QName(NS_ATOM, 'entry'))
-    etree.SubElement(entry, etree.QName(NS_ATOM, 'id')).text = 'book:id:%s' % hash(book.path)
+    etree.SubElement(entry, etree.QName(NS_ATOM, 'id')).text = 'book:id:%s' % file_hash(book.path)
     # TODO: use real update time
     etree.SubElement(entry, etree.QName(NS_ATOM, 'updated')).text = timestamp()
     etree.SubElement(entry, etree.QName(NS_ATOM, 'title')).text = book.title
@@ -113,10 +119,10 @@ def add_entry(root, urls, working_dir):
             etree.SubElement(entry, etree.QName(NS_CALIBRE, 'series_index')).text = index
     if book.description:
         etree.SubElement(entry, etree.QName(NS_ATOM, 'summary'), type='html').text = book.description
-    for author in book.authors:
+    for name in [author.get('name') for author in book.authors]:
         a = etree.SubElement(entry, etree.QName(NS_ATOM, 'author'))
-        etree.SubElement(a, etree.QName(NS_ATOM, 'name')).text = author.get('name')
-        etree.SubElement(a, etree.QName(NS_ATOM, 'uri')).text = 'author:id:' + author.get('sortkey')
+        etree.SubElement(a, etree.QName(NS_ATOM, 'name')).text = name
+        etree.SubElement(a, etree.QName(NS_ATOM, 'uri')).text = 'author:id:' + string_hash(name)
     for tag in book.tags:
         etree.SubElement(entry, etree.QName(NS_ATOM, 'category'), term=tag, label=tag)
 #  <link href='{{ b.thumbnail.url | urlencode }}' type='{{ b.thumbnail.mimetype }}' rel='http://opds-spec.org/thumbnail'/>
@@ -139,10 +145,21 @@ def create_opds(description_file, output_dir, working_dir):
     with open(description_file) as data:
         info = {}
         urls = []
-        for line in [l.strip() for l in data if not l.strip().startswith('#')]:
+        for count, line in enumerate([l.strip() for l in data]):
+            if not line or line.startswith('#'):
+                continue
             matcher = SECTION_PATTERN.match(line)
             if matcher:
-                section = matcher.group(1)
+                new_section = matcher.group(1)
+                if section == None:
+                    if new_section != 'feed':
+                        fatal('line %s: first section must be [feed]', count + 1)
+                else:
+                    if new_section == 'feed':
+                        fatal('line %s: duplicate [feed] section', count + 1)
+                    elif new_section != 'book':
+                        fatal('line %s: unknown [%s] section', count + 1, new_section)
+                section = new_section
                 if info:
                     add_info(root, info)
                     info = {}
@@ -166,7 +183,7 @@ if __name__ == '__main__':
         if params.override:
             shutil.rmtree(params.output_dir)
         else:
-            exit('Error: %s already exists' % params.output_dir)
+            fatal('%s already exists', params.output_dir)
     os.makedirs(params.output_dir)
 
     working_dir = tempfile.mkdtemp(dir='.')
