@@ -4,8 +4,9 @@ import hashlib, os, re, shutil, sys, tempfile, urllib2
 from argparse import ArgumentParser
 from datetime import datetime
 from lxml import etree
+from PIL import Image
 
-from fbreader.format import create_bookfile
+from fbreader.format import create_bookfile, detect_mime
 
 def parse_command_line():
     parser = ArgumentParser(
@@ -36,7 +37,9 @@ NS_ATOM         = 'http://www.w3.org/2005/Atom'
 NS_DUBLIN_CORE  = 'http://purl.org/dc/terms/'
 NS_CALIBRE      = 'http://calibre.kovidgoyal.net/2009/metadata'
 
-ACQ_OPEN_ACCESS = 'http://opds-spec.org/acquisition/open-access'
+REL_ACQ_OPEN_ACCESS = 'http://opds-spec.org/acquisition/open-access'
+REL_COVER = 'http://opds-spec.org/cover'
+REL_THUMBNAIL = 'http://opds-spec.org/thumbnail'
 
 def utf8(text):
     if isinstance(text, str):
@@ -81,7 +84,7 @@ def add_info(root, info):
         else:
             warning('feed "%s" attribute is not specified', author_key)
 
-def add_entry(root, urls, working_dir):
+def add_entry(root, urls, output_dir, working_dir):
     book_map = {}
     for count, u in enumerate(urls):
         file_name = working_dir + '/%s' % count
@@ -90,9 +93,8 @@ def add_entry(root, urls, working_dir):
                 f.write(urllib2.urlopen(u).read())
             try:
                 book_map[u] = create_bookfile(file_name, u)
-            except Exception, e:
+            except:
                 warning('cannot parse file %s, skipping', u)
-                print str(e)
         except:
             warning('cannot download %s, skipping', u)
     if not book_map:
@@ -102,9 +104,10 @@ def add_entry(root, urls, working_dir):
         if book_map.has_key(u):
             book = book_map.get(u)
             break
+    book_id = file_hash(book.path)
 
     entry = etree.SubElement(root, etree.QName(NS_ATOM, 'entry'))
-    etree.SubElement(entry, etree.QName(NS_ATOM, 'id')).text = 'book:id:%s' % file_hash(book.path)
+    etree.SubElement(entry, etree.QName(NS_ATOM, 'id')).text = 'book:id:%s' % book_id
     # TODO: use real update time
     etree.SubElement(entry, etree.QName(NS_ATOM, 'updated')).text = timestamp()
     etree.SubElement(entry, etree.QName(NS_ATOM, 'title')).text = book.title
@@ -125,12 +128,32 @@ def add_entry(root, urls, working_dir):
         etree.SubElement(a, etree.QName(NS_ATOM, 'uri')).text = 'author:id:' + string_hash(name)
     for tag in book.tags:
         etree.SubElement(entry, etree.QName(NS_ATOM, 'category'), term=tag, label=tag)
-#  <link href='{{ b.thumbnail.url | urlencode }}' type='{{ b.thumbnail.mimetype }}' rel='http://opds-spec.org/thumbnail'/>
-#  <link href='{{ b.cover.url | urlencode }}' type='{{ b.cover.mimetype }}' rel='http://opds-spec.org/cover'/>
+    cover = book.extract_cover(working_dir)
+    if cover:
+        try:
+            path = working_dir + '/' + cover
+            image = Image.open(path).convert('RGB')
+            mime = detect_mime(path)
+            ext = mime[6:] if len(mime) > 7 and mime.startswith('image/') else 'jpeg'
+            url = book_id + '.' + ext
+            shutil.copy(path, output_dir + '/' + url)
+            etree.SubElement(entry, etree.QName(NS_ATOM, 'link'), href=url, type=mime, rel=REL_COVER)
+            if image.size[0] > 160:
+                width = 128
+                height = int(float(width) * image.size[1] / image.size[0] + .5)
+                image.thumbnail((width, height), Image.ANTIALIAS)
+                thumbnail_path = working_dir + '/thumbnail.jpeg'
+                image.save(thumbnail_path, 'JPEG')
+                mime = 'image/jpeg'
+                url = book_id + '.thumbnail.jpeg'
+                shutil.copy(thumbnail_path, output_dir + '/' + url)
+            etree.SubElement(entry, etree.QName(NS_ATOM, 'link'), href=url, type=mime, rel=REL_THUMBNAIL)
+        except:
+            pass
     for u in urls:
         b = book_map.get(u)
         if b:
-            etree.SubElement(entry, etree.QName(NS_ATOM, 'link'), href=utf8(u), type=b.mimetype, rel=ACQ_OPEN_ACCESS)
+            etree.SubElement(entry, etree.QName(NS_ATOM, 'link'), href=utf8(u), type=b.mimetype, rel=REL_ACQ_OPEN_ACCESS)
 
 def create_opds(description_file, output_dir, working_dir):
     SECTION_PATTERN = re.compile('^\[(.+)\]$')
@@ -164,7 +187,7 @@ def create_opds(description_file, output_dir, working_dir):
                     add_info(root, info)
                     info = {}
                 if urls:
-                    add_entry(root, urls, working_dir)
+                    add_entry(root, urls, output_dir, working_dir)
                     urls = []
             elif section == 'feed':
                 data = line.split('=')
@@ -173,7 +196,7 @@ def create_opds(description_file, output_dir, working_dir):
             elif section == 'book':
                 urls.append(line)
         if urls:
-            add_entry(root, urls, working_dir)
+            add_entry(root, urls, output_dir, working_dir)
     with open(output_dir + '/catalog.xml', 'w') as pfile:
         etree.ElementTree(root).write(pfile, encoding='utf-8', xml_declaration=True, pretty_print=True)
 

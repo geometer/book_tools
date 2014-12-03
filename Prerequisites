@@ -1,10 +1,12 @@
-python libraries required for running these scripts on debian computer:
+packages (python) required for running these scripts on debian computer:
 
 all scripts:
-  python 2.7
-  lxml          pyhton-lxml [debian]
-  crypto        python-crypto [debian]
-
-create_opds.py:
-  magic         pyhton-magic [debian]
-  pymobi        pymobi [pip]
+  python 2.7       python2.7 [debian]             (pythonc core)
+  lxml             pyhton-lxml [debian]           (XML processing)
+  crypto           python-crypto [debian]         (crypto algorithms, AES and SHA1 used)
+                                              
+create_opds.py:                               
+  magic            pyhton-magic [debian]          (file type detector)
+  PIL              python-imaging [debian]        (Python Imaging Library)
+  python-magick    python-pythonmagick [debian]   (ImageMagick bindings)
+  pymobi           pymobi [pip]                   (.mobi support)

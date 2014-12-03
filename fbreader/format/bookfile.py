@@ -1,6 +1,8 @@
 import os, re
 from abc import abstractmethod, ABCMeta
 
+from fbreader.format.util import minify_cover
+
 class BookFile(object):
     __metaclass__ = ABCMeta
 
@@ -25,6 +27,8 @@ class BookFile(object):
 
     def extract_cover(self, working_dir):
         cover, minified = self.extract_cover_internal(working_dir)
+        if cover and not minified:
+            minify_cover(os.path.join(working_dir, cover))
         return cover
 
     def extract_cover_internal(self, working_dir):
