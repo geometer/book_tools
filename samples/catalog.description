@@ -9,19 +9,19 @@ author_uri = http://sources.fbreader.org/book_tools/
 
 # Simple book entry
 [book]
-https://demo.fbreader.org/static/books/Arthur%20Conan%20Doyle%20-%20The%20Sign%20of%20the%20Four.epub
+url = https://demo.fbreader.org/static/books/Arthur%20Conan%20Doyle%20-%20The%20Sign%20of%20the%20Four.epub
 
 # This book has several download links
 [book]
-https://demo.fbreader.org/static/books/Arthur%20Conan%20Doyle%20-%20The%20Adventures%20of%20Sherlock%20Holmes.epub
-https://demo.fbreader.org/static/books/Adventures%20of%20Sherlock%20Holmes,%20The%20-%20Arthur%20Conan%20Doyle.fb2.zip
-https://demo.fbreader.org/static/books/Adventures%20of%20Sherlock%20Holmes,%20The%20-%20Arthur%20Conan%20Doyle.fb2
-https://demo.fbreader.org/static/books/Adventures%20of%20Sherlock%20Holmes,%20The%20-%20Arthur%20Conan%20Doyle.mobi
+url = https://demo.fbreader.org/static/books/Arthur%20Conan%20Doyle%20-%20The%20Adventures%20of%20Sherlock%20Holmes.epub
+url = https://demo.fbreader.org/static/books/Adventures%20of%20Sherlock%20Holmes,%20The%20-%20Arthur%20Conan%20Doyle.fb2.zip
+url = https://demo.fbreader.org/static/books/Adventures%20of%20Sherlock%20Holmes,%20The%20-%20Arthur%20Conan%20Doyle.fb2
+url = https://demo.fbreader.org/static/books/Adventures%20of%20Sherlock%20Holmes,%20The%20-%20Arthur%20Conan%20Doyle.mobi
 
-# More entries
+# More book entries
 [book]
-https://demo.fbreader.org/static/books/Arthur%20Conan%20Doyle%20-%20The%20Return%20of%20Sherlock%20Holmes.epub
+url = https://demo.fbreader.org/static/books/Arthur%20Conan%20Doyle%20-%20The%20Return%20of%20Sherlock%20Holmes.epub
 [book]
-https://demo.fbreader.org/static/books/Arthur%20Conan%20Doyle%20-%20The%20Casebook%20of%20Sherlock%20Holmes.epub
+url = https://demo.fbreader.org/static/books/Arthur%20Conan%20Doyle%20-%20The%20Casebook%20of%20Sherlock%20Holmes.epub
 [book]
-https://demo.fbreader.org/static/books/Arthur%20Conan%20Doyle%20-%20The%20Hound%20of%20the%20Baskervilles.epub
+url = https://demo.fbreader.org/static/books/Arthur%20Conan%20Doyle%20-%20The%20Hound%20of%20the%20Baskervilles.epub

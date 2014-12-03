@@ -192,12 +192,16 @@ def create_opds(description_file, output_dir, working_dir):
                 if urls:
                     add_entry(root, urls, output_dir, working_dir)
                     urls = []
-            elif section == 'feed':
+            else:
                 data = line.split('=')
-                if len(data) == 2:
-                    info[data[0].strip()] = utf8(data[1].strip())
-            elif section == 'book':
-                urls.append(line)
+                if len(data) != 2:
+                    fatal('invalid format in line %s', count + 1)
+                key = data[0].strip()
+                value = data[1].strip()
+                if section == 'feed':
+                    info[key] = utf8(value)
+                elif section == 'book' and key == 'url':
+                    urls.append(value)
         if urls:
             add_entry(root, urls, output_dir, working_dir)
     with open(output_dir + '/catalog.xml', 'w') as pfile:
