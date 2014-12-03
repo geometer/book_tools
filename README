@@ -4,6 +4,13 @@ Command line tools:
   ./create_opds.py:     OPDS catalog file creator (takes list of books + some metainfo)
   ./encrypt.py:         Marlin ePub encryptor
 
+OPDS creation tool takes list of book urls (+some feed meta information) as input. Sample
+catalog description can be found in ./sample/catalog.description. Supported book formats:
+  ePub
+  mobi (a.k.a. azw3)
+  fb2
+  fb2.zip
+
 How to create sample OPDS catalog:
   ./create_opds.py ./sample/catalog.description
 Catalog files will be created in './opds'. Run
