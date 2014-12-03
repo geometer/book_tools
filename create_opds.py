@@ -10,7 +10,7 @@ from fbreader.format import create_bookfile, detect_mime
 
 def parse_command_line():
     parser = ArgumentParser(
-        description='OPDS creation tool'
+        description='''FBReader.ORG OPDS creation tool'''
     )
     parser.add_argument(
         'description_file',
