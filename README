@@ -3,3 +3,9 @@ Python library used on FBReader® book network (https://books.fbreader.org/) + s
 Command line tools:
   ./create_opds.py:     OPDS catalog file creator (takes list of books + some metainfo)
   ./encrypt.py:         Marlin ePub encryptor
+
+How to create sample OPDS catalog:
+  ./create_opds.py ./sample/catalog.description
+Catalog files will be created in './opds'. Run
+  ./create_opds.py -h
+for more information.
