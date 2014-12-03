@@ -3,7 +3,7 @@
 [feed]
 id = https://demo.fbreader.org/books/sample
 title = Sample catalogs
-description = Sherlock Holmes books
+subtitle = Sherlock Holmes books
 author_name = Automatic catalog creator
 author_uri = http://sources.fbreader.org/book_tools/
 

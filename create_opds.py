@@ -73,7 +73,7 @@ def fatal(pattern, *params):
 
 def add_info(root, info):
     etree.SubElement(root, etree.QName(NS_ATOM, 'updated')).text = timestamp()
-    for key in ('id', 'title', 'description', 'icon'):
+    for key in ('id', 'title', 'subtitle', 'icon'):
         if info.has_key(key):
             etree.SubElement(root, etree.QName(NS_ATOM, key)).text = info.get(key)
         else:
