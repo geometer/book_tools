@@ -60,6 +60,8 @@ def file_hash(file_name):
 
 def string_hash(string):
     sha = hashlib.sha1()
+    if isinstance(string, unicode):
+        string = string.encode(encoding='utf-8')
     sha.update(string)
     return sha.hexdigest()
 
@@ -90,7 +92,8 @@ def add_entry(root, urls, output_dir, working_dir):
         file_name = working_dir + '/%s' % count
         try:
             with open(file_name, 'wb') as f:
-                f.write(urllib2.urlopen(u).read())
+                request = urllib2.Request(u, headers={ 'User-Agent': 'FBReader.ORG OPDS creator' })
+                f.write(urllib2.urlopen(request).read())
             try:
                 book_map[u] = create_bookfile(file_name, u)
             except:
