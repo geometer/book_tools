@@ -5,8 +5,7 @@ from argparse import ArgumentParser
 from datetime import datetime
 from lxml import etree
 
-from fbreader.format.epub import EPub
-from fbreader.format.mimetype import Mimetype
+from fbreader.format import create_bookfile
 
 def parse_command_line():
     parser = ArgumentParser(
@@ -56,28 +55,50 @@ def hash(file_name):
             data = istream.read(8192)
     return sha.hexdigest()
 
+def warning(pattern, params):
+    print 'Warning: ' + pattern % params
+
 def add_info(root, info):
     etree.SubElement(root, etree.QName(NS_ATOM, 'updated')).text = timestamp()
     for key in ('id', 'title', 'description', 'icon'):
         if info.has_key(key):
             etree.SubElement(root, etree.QName(NS_ATOM, key)).text = info.get(key)
         else:
-            print 'Warning: feed "%s" attribute is not specified' % key
+            warning('feed "%s" attribute is not specified', key)
     author = etree.SubElement(root, etree.QName(NS_ATOM, 'author'))
     for key in ('name', 'uri', 'email'):
         author_key = 'author_' + key
         if info.has_key(author_key):
             etree.SubElement(author, etree.QName(NS_ATOM, key)).text = info.get(author_key)
         else:
-            print 'Warning: feed "%s" attribute is not specified' % author_key
+            warning('feed "%s" attribute is not specified', author_key)
 
 def add_entry(root, urls, working_dir):
-    file_name = working_dir + '/1'
-    with open(file_name, 'wb') as f:
-        f.write(urllib2.urlopen(urls[0]).read())
-    book = EPub(file_name)
+    count = 0
+    book_map = {}
+    for u in urls:
+        file_name = working_dir + '/%s' % count
+        count += 1
+        try:
+            with open(file_name, 'wb') as f:
+                f.write(urllib2.urlopen(u).read())
+            try:
+                book_map[u] = create_bookfile(file_name, u)
+            except Exception, e:
+                warning('cannot parse file %s, skipping', u)
+                print str(e)
+        except:
+            warning('cannot download %s, skipping', u)
+    if not book_map:
+        return
+
+    for u in urls:
+        if book_map.has_key(u):
+            book = book_map.get(u)
+            break
+
     entry = etree.SubElement(root, etree.QName(NS_ATOM, 'entry'))
-    etree.SubElement(entry, etree.QName(NS_ATOM, 'id')).text = 'book:id:%s' % hash(file_name)
+    etree.SubElement(entry, etree.QName(NS_ATOM, 'id')).text = 'book:id:%s' % hash(book.path)
     # TODO: use real update time
     etree.SubElement(entry, etree.QName(NS_ATOM, 'updated')).text = timestamp()
     etree.SubElement(entry, etree.QName(NS_ATOM, 'title')).text = book.title
@@ -101,9 +122,9 @@ def add_entry(root, urls, working_dir):
 #  <link href='{{ b.thumbnail.url | urlencode }}' type='{{ b.thumbnail.mimetype }}' rel='http://opds-spec.org/thumbnail'/>
 #  <link href='{{ b.cover.url | urlencode }}' type='{{ b.cover.mimetype }}' rel='http://opds-spec.org/cover'/>
     for u in urls:
-        # TODO: correct type
-        mime = Mimetype.EPUB
-        etree.SubElement(entry, etree.QName(NS_ATOM, 'link'), href=utf8(u), type=mime, rel=ACQ_OPEN_ACCESS)
+        b = book_map.get(u)
+        if b:
+            etree.SubElement(entry, etree.QName(NS_ATOM, 'link'), href=utf8(u), type=b.mimetype, rel=ACQ_OPEN_ACCESS)
 
 def create_opds(description_file, output_dir, working_dir):
     SECTION_PATTERN = re.compile('^\[(.+)\]$')
@@ -118,7 +139,7 @@ def create_opds(description_file, output_dir, working_dir):
     with open(description_file) as data:
         info = {}
         urls = []
-        for line in [l.strip() for l in data]:
+        for line in [l.strip() for l in data if not l.strip().startswith('#')]:
             matcher = SECTION_PATTERN.match(line)
             if matcher:
                 section = matcher.group(1)

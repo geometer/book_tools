@@ -50,7 +50,7 @@ if __name__ == '__main__':
     params = parse_command_line()
     working_dir = tempfile.mkdtemp(dir='.')
     try:
-        epub = EPub(params.epub)
+        epub = EPub(params.epub, params.epub)
         epub.encrypt(params.key, params.content_id, working_dir, files_to_keep=params.keep_unencrypted)
     finally:
         shutil.rmtree(working_dir)

@@ -5,9 +5,7 @@ from tempfile import mktemp
 from fbreader.format.aes import encrypt
 from fbreader.format.bookfile import BookFile
 from fbreader.format.mimetype import Mimetype
-
-def list_zip_file_infos(zipfile):
-    return [info for info in zipfile.infolist() if not info.filename.endswith('/')]
+from fbreader.format.util import list_zip_file_infos
 
 class EPub(BookFile):
     class Issue(object):
@@ -43,8 +41,8 @@ class EPub(BookFile):
         def __init__(self, message):
             Exception.__init__(self, 'ePub verification failed: ' + message)
 
-    def __init__(self, path):
-        BookFile.__init__(self, path, path, Mimetype.EPUB)
+    def __init__(self, path, original_filename):
+        BookFile.__init__(self, path, original_filename, Mimetype.EPUB)
         self.root_filename = None
         self.cover_fileinfos = []
 
