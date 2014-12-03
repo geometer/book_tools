@@ -113,21 +113,21 @@ def add_entry(root, urls, output_dir, working_dir):
     etree.SubElement(entry, etree.QName(NS_ATOM, 'id')).text = 'book:id:%s' % book_id
     # TODO: use real update time
     etree.SubElement(entry, etree.QName(NS_ATOM, 'updated')).text = timestamp()
-    etree.SubElement(entry, etree.QName(NS_ATOM, 'title')).text = book.title
+    etree.SubElement(entry, etree.QName(NS_ATOM, 'title')).text = utf8(book.title)
     if book.language_code:
         etree.SubElement(entry, etree.QName(NS_DUBLIN_CORE, 'language')).text = book.language_code
     if book.series_info:
         title = book.series_info.get('title')
         if title:
-            etree.SubElement(entry, etree.QName(NS_CALIBRE, 'series')).text = title
+            etree.SubElement(entry, etree.QName(NS_CALIBRE, 'series')).text = utf8(title)
         index = book.series_info.get('index')
         if index:
             etree.SubElement(entry, etree.QName(NS_CALIBRE, 'series_index')).text = index
     if book.description:
-        etree.SubElement(entry, etree.QName(NS_ATOM, 'summary'), type='html').text = book.description
+        etree.SubElement(entry, etree.QName(NS_ATOM, 'summary'), type='html').text = utf8(book.description)
     for name in [author.get('name') for author in book.authors]:
         a = etree.SubElement(entry, etree.QName(NS_ATOM, 'author'))
-        etree.SubElement(a, etree.QName(NS_ATOM, 'name')).text = name
+        etree.SubElement(a, etree.QName(NS_ATOM, 'name')).text = utf8(name)
         etree.SubElement(a, etree.QName(NS_ATOM, 'uri')).text = 'author:id:' + string_hash(name)
     for tag in book.tags:
         etree.SubElement(entry, etree.QName(NS_ATOM, 'category'), term=tag, label=tag)
