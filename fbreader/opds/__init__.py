@@ -48,8 +48,11 @@ class OpdsBuilder(object):
         }
         root = etree.Element(etree.QName(NS_ATOM, 'feed'), nsmap=namespaces)
         with open(description_file) as data:
-            info = {}
-            urls = []
+            catalog_info = {}
+            book_info = {
+                'urls': []
+            }
+
             for count, line in enumerate([l.strip() for l in data]):
                 if not line or line.startswith('#'):
                     continue
@@ -65,30 +68,35 @@ class OpdsBuilder(object):
                         elif new_section != 'book':
                             self.__error_handler.fatal('line %s: unknown [%s] section', count + 1, new_section)
                     section = new_section
-                    if info:
-                        self.__add_info(root, info)
-                        info = {}
-                    if urls:
-                        self.__add_entry(root, urls)
-                        urls = []
+                    if catalog_info:
+                        self.__add_info(root, catalog_info)
+                        catalog_info = {}
+                    if book_info['urls']:
+                        self.__add_entry(root, book_info)
+                        book_info = {
+                            'urls': []
+                        }
                 else:
-                    data = line.split('=')
-                    if len(data) != 2:
+                    index = line.find('=')
+                    if index <= 0:
                         self.__error_handler.fatal('invalid format in line %s', count + 1)
-                    key = data[0].strip()
-                    value = data[1].strip()
+                    key = line[0:index].strip()
+                    value = line[index+1:].strip()
                     if section == 'feed':
-                        info[key] = OpdsBuilder.__utf8(value)
-                    elif section == 'book' and key == 'url':
-                        urls.append(value)
-            if urls:
-                self.__add_entry(root, urls)
+                        catalog_info[key] = OpdsBuilder.__utf8(value)
+                    elif section == 'book':
+                        if key == 'url':
+                            book_info['urls'].append(value)
+                        else:
+                            book_info[key] = value
+            if book_info['urls']:
+                self.__add_entry(root, book_info)
         with open(self.__output_dir + '/catalog.xml', 'w') as pfile:
             etree.ElementTree(root).write(pfile, encoding='utf-8', xml_declaration=True, pretty_print=True)
 
-    def __add_entry(self, root, urls):
+    def __add_entry(self, root, info):
         book_map = {}
-        for count, u in enumerate(urls):
+        for count, u in enumerate(info['urls']):
             file_name = self.__working_dir + '/%s' % count
             try:
                 with open(file_name, 'wb') as f:
@@ -103,7 +111,7 @@ class OpdsBuilder(object):
         if not book_map:
             return
 
-        for u in urls:
+        for u in info['urls']:
             if book_map.has_key(u):
                 book = book_map.get(u)
                 break
@@ -123,8 +131,20 @@ class OpdsBuilder(object):
             index = book.series_info.get('index')
             if index:
                 etree.SubElement(entry, etree.QName(NS_CALIBRE, 'series_index')).text = index
-        if book.description:
-            etree.SubElement(entry, etree.QName(NS_ATOM, 'summary'), type='html').text = OpdsBuilder.__utf8(book.description)
+
+        summary = ''
+        if info.get('summary'):
+            summary = '<p>' + OpdsBuilder.__utf8(info['summary']) + '</p>'
+        else:
+            if info.get('summary_prefix'):
+                summary += '<p>' + OpdsBuilder.__utf8(info['summary_prefix']) + '</p>'
+            if book.description:
+                summary += OpdsBuilder.__utf8(book.description)
+            if info.get('summary_postfix'):
+                summary += '<p>' + OpdsBuilder.__utf8(info['summary_postfix']) + '</p>'
+        if summary:
+            etree.SubElement(entry, etree.QName(NS_ATOM, 'summary'), type='html').text = summary
+
         for name in [author.get('name') for author in book.authors]:
             a = etree.SubElement(entry, etree.QName(NS_ATOM, 'author'))
             etree.SubElement(a, etree.QName(NS_ATOM, 'name')).text = OpdsBuilder.__utf8(name)
@@ -153,7 +173,7 @@ class OpdsBuilder(object):
                 etree.SubElement(entry, etree.QName(NS_ATOM, 'link'), href=url, type=mime, rel=REL_THUMBNAIL)
             except:
                 pass
-        for u in urls:
+        for u in info['urls']:
             b = book_map.get(u)
             if b:
                 etree.SubElement(entry, etree.QName(NS_ATOM, 'link'), href=OpdsBuilder.__utf8(u), type=b.mimetype, rel=REL_ACQ_OPEN_ACCESS)
